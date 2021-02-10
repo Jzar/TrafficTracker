@@ -2,7 +2,7 @@
 import os
 import errno
 import argparse
-import numpy as np
+import cupy as np
 import cv2
 import tensorflow.compat.v1 as tf
     

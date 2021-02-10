@@ -1,6 +1,6 @@
 # vim: expandtab:ts=4:sw=4
 from __future__ import absolute_import
-import numpy as np
+import cupy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
 from . import kalman_filter
 

@@ -1,5 +1,5 @@
 # vim: expandtab:ts=4:sw=4
-import numpy as np
+import cupy as np
 
 
 def _pdist(a, b):
