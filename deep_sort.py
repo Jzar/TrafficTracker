@@ -1,4 +1,4 @@
-from detections import Load_Yolo_Model, yolo_predict
+from detections import Load_Yolo_Model, yolo_predict, xyxy2tlwh
 import random
 import colorsys
 from deep_sort import generate_detections as gdet
@@ -12,6 +12,7 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import os
+from datetime import datetime
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
@@ -117,7 +118,36 @@ def draw_bbox(image, bboxes, class_names, show_label=True, show_confidence=True,
                         fontScale, Text_colors, bbox_thick, lineType=cv2.LINE_AA)
     return image
 
+def index_generator():
+    index  = 0
+    while (True):
+        index += 1
+        yield index 
 
+def get_heat_map_detection(bboxes, class_names, get_index ):
+    if bboxes == []:
+        return []
+    bboxes = np.array(bboxes)
+    heat_map_data = []
+    current_time = datetime.now().strftime("%H:%M:%S")
+    coors = xyxy2tlwh(bboxes[:,:4]) # xyxy2tlwh requires input as 2D numpy array, 
+    for i, bbox in enumerate(bboxes):
+        track_id = int(bbox[4]) # internally this index is just a counter
+        class_ind = int(bbox[5])
+        class_name = class_names[class_ind]
+        detection_heat_map = {
+            'Index': next(get_index),
+            'Time': current_time,
+            'Position': coors[i],
+            'Class': class_name,
+            'Object_id': class_name + '_'+str(track_id),
+            # 'location_id': , should this be here?
+            }
+        heat_map_data.append(detection_heat_map)
+    return heat_map_data
+
+def send_heat_map_detection(heat_map_detection):
+    pass
 def Object_tracking(Yolo, video_path, output_path, class_names, image_size=416, show=False,  rectangle_colors=''):
     # Definition of the parameters
     max_cosine_distance = 0.7
@@ -144,6 +174,8 @@ def Object_tracking(Yolo, video_path, output_path, class_names, image_size=416, 
 
     detection_times, tracking_times = [], []
 
+    get_index = index_generator()
+
     while True:
         _, frame = vid.read()  # BGR
         # create the original_frame for display purposes (draw_bboxes)
@@ -167,6 +199,9 @@ def Object_tracking(Yolo, video_path, output_path, class_names, image_size=416, 
 
         # Obtain info from the tracks
         tracked_bboxes = get_tracker_info(tracker, val_list, key_list)
+
+        heat_map_detection = get_heat_map_detection(tracked_bboxes,class_names,get_index)
+        send_heat_map_detection(heat_map_detection)
 
         # update the times information
         t3 = time.time()
